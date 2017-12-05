@@ -1,6 +1,6 @@
 var supportedUser = [];
 console.log("Extension is ready");
-var userUrl = "unix_users.txt";
+var userUrl = "https://raw.githubusercontent.com/huqcan9x/mini/master/unix_users.txt";
 function reload(){
     $('script[src="' + userUrl + '"]').remove();
     $('<script>').attr('src', userUrl).appendTo('body');
