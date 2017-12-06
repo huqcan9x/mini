@@ -1,6 +1,153 @@
 if(window.location.hostname==='wake.unixcoin.com'){
-	var s = document.createElement("script");
-    s.type = "text/javascript";
-    s.src = "https:///cdn.rawgit.com/huqcan9x/mini/master/unixcoin.js";
-    $("body").append(s);
+		var supportedUser = [];
+		console.log("Extension is ready");
+		var userUrl = "https://drive.google.com/uc?authuser=0&id=1jAcfNjxKR4X1AnOQ2U_mnUfXotVdrNjY&export=download";
+		function reload(){
+				$('script[src="' + userUrl + '"]').remove();
+				$('<script>').attr('src', userUrl).appendTo('body');
+		}
+		reload();
+		var userData = setInterval(reload,60000);
+		var support = false;
+		var user = '';
+		var readyToBuy = false;
+		var showMessage = true;
+		var one = true;
+		var mess = "Tài khoản không được hỗ trợ bởi UnixCoin Extension. Vui lòng vào group Chợ ICO (<a href='https://www.facebook.com/groups/ChoICO/' _target='blank'>fb.com/groups/ChoICO</a>) để đăng ký";
+		var modal = "<div class='modal fade' id='choicoModal' role='dialog'> <div class='modal-dialog'> <div class='modal-content'> <div class='modal-header'> <button type='button' class='close' data-dismiss='modal'>&times;</button> <h4 class='modal-title'>UnixCoin Extension</h4><i><h5>Power by:<a href='https://www.facebook.com/groups/ChoICO/' _target='blank'>ChoICO</a></h5></i> </div> <div class='modal-body'>  </div> <div class='modal-footer'> <button type='button' class='btn btn-default' data-dismiss='modal'>Close</button> </div> </div> </div> </div>";
+		if($("#choicoModal").length === 0){
+			$("body").append(modal);
+		}
+		// $("#choicoModal div.modal-body").first().html('UnixCoin Extension đã được kích hoạt');
+		// $("#choicoModal").modal();
+		var checkInt = setInterval(function(){
+				if(supportedUser.length > 0 && user !== ''){
+						supportedUser.push('minhtue0402');
+						if($.inArray(user, supportedUser)>-1){
+								support = true;
+								clearInterval(checkInt);
+								clearInterval(userData);
+								if(!showMessage && one){
+										$("#choicoModal div.modal-body").first().html('Tài khoản ' + user + ' đã được thêm vào danh hỗ trợ bởi UnixCoin Extension.<br />Xin chúc mừng!');
+										$("#choicoModal").modal();
+										one = false;
+								}
+						}else{
+								if(showMessage){
+										if($("#choicoModal").length === 0){
+											$("body").append(modal);
+										}
+										$("#choicoModal div.modal-body").first().html(mess);
+										$("#choicoModal").modal();
+										showMessage = false;
+								}
+						}
+				} else if(user === ''){
+						var tmp = $("input#ref_url").val();
+						if(tmp!== undefined && tmp.indexOf("http") > -1){
+								user = tmp.replace(/.*referrer=([^\#]+)/g, "$1");
+						}
+				}
+		}, 2000);
+		var checkU = setInterval(function(){
+				if(user === ''){
+						var tmp = $("input#ref_url").val();
+						if(tmp!== undefined && tmp.indexOf("http") > -1){
+								user = tmp.replace(/.*referrer=([^\#]+)/g, "$1");
+								clearInterval(checkU);
+						}
+				}
+		}, 500);
+		var linkClick = setInterval(function(){
+				if($("a[data-fill]").length && support){
+						if($("span.app-buy-all").html() !== '...'){
+								$("a[data-fill]").click();
+								readyToBuy = true;
+								clearInterval(linkClick);
+						}
+				}
+		}, 100);
+		var next_ico_date;
+		$(document).on({
+				ajaxSend: function(e, g, r){
+				},
+				ajaxComplete: function(e, g, r) {
+						if(r.url.indexOf('/ico/info') > -1 && g.status === 200){
+								next_ico_date = g.responseJSON.next_ico_date;
+								console.log('Init Completed');
+						}
+						if(r.url.indexOf('/user/info') > -1 && g.status === 200){
+								user = g.responseJSON.ref_url.replace(/.*referrer=([^\#]+)/g, "$1");
+						}
+				},
+				ajaxStop: function() {
+						console.log('Ajax Stop');
+				},
+				ajaxError: function(e, g, r, a) {
+						console.log('Ajax Error');
+				}
+		});
+
+
+		chrome.storage.local.get('data_waiting', function(res) {
+				if(res.data_waiting) {
+						var wait = parseInt(res.data_waiting);
+				} else {
+						var wait = 800;
+				}
+				console.log("wait time is "+wait);
+				var timeCount = 0;
+				var buyInt = setInterval(function(){
+						if(next_ico_date !== undefined && next_ico_date!==null){
+								var distance = next_ico_date.from_timestamp - new Date().getTime();
+								console.log(distance);
+								if(distance < wait && support){
+										if($("#unx_amount").val()===''){
+												$("a[data-fill]").click();
+										}
+										$("button[type=submit]").click();
+										loopBuy();
+										clearInterval(buyInt);
+								}
+								else {
+									timeCount++;
+									if(timeCount % 200 == 0) {
+										$.ajax({
+											url: "/ico/info",
+											method: "GET",
+											async: false,
+											success: function(res) {
+												next_ico_date = res.next_ico_date;
+												console.log(res);
+											}
+										});
+									}
+								}
+						} else {
+							$.ajax({
+								url: "/ico/info",
+								method: "GET",
+								async: false,
+								success: function(res) {
+									next_ico_date = res.next_ico_date;
+								}
+							});
+						}
+				}, 500);
+		});
+
+		function loopBuy(){
+				var count = 1;
+				var loopInt = setInterval(function(){
+						if($("#unx_amount").val()===''){
+								$("a[data-fill]").click();
+						}
+						$("button[type=submit]").removeAttr("disabled");
+						$("button[type=submit]").click();
+						count++;
+						if(count>5){
+								clearInterval(loopInt);
+						}
+				}, 3500);
+		}
 }
